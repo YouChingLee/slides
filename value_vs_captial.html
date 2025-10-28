@@ -1,935 +1,549 @@
 <!DOCTYPE html>
-
 <html lang="zh-Hant">
-
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>股票市場的兩種遊戲</title>
-
     <!-- 載入 Tailwind CSS -->
-
     <script src="https://cdn.tailwindcss.com"></script>
-
     <!-- 載入 Inter 字型 -->
-
     <link rel="preconnect" href="https://fonts.googleapis.com">
-
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
-
     <style>
-
         /* 基本樣式，使用 Noto Sans TC 字型 */
-
         body {
-
             font-family: 'Inter', 'Noto Sans TC', sans-serif;
-
             background-color: #f0f4f8;
-
             color: #1e293b;
-
         }
 
         /* 投影片容器 */
-
         .slide {
-
             width: 100%;
-
             height: 100%;
-
             padding: 2rem;
-
             display: none; /* 預設隱藏 */
-
             flex-direction: column;
-
             justify-content: center;
-
             align-items: center;
-
             text-align: center;
-
             transition: opacity 0.5s ease-in-out;
-
             position: absolute;
-
             top: 0;
-
             left: 0;
-
             box-sizing: border-box; /* 確保 padding 不會影響寬高 */
-
         }
 
         /* 顯示當前投影片 */
-
         .slide.active {
-
             display: flex;
-
             opacity: 1;
-
         }
 
         /* 隱藏的投影片 */
-
         .slide:not(.active) {
-
             opacity: 0;
-
         }
 
         /* 投影片主內容區域 */
-
         .slide-content {
-
             flex-grow: 1;
-
             display: flex;
-
             flex-direction: column;
-
             justify-content: center;
-
             align-items: center;
-
             width: 100%;
-
             max-width: 1024px;
-
         }
 
         /* 導覽按鈕 */
-
         .nav-button {
-
             position: fixed;
-
             bottom: 2rem;
-
             padding: 0.75rem 1.5rem;
-
             background-color: #3b82f6; /* 藍色 */
-
             color: white;
-
             font-weight: bold;
-
             border-radius: 9999px; /* 膠囊形狀 */
-
             cursor: pointer;
-
             transition: all 0.2s ease;
-
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-
             z-index: 10;
-
         }
 
         .nav-button:hover {
-
             background-color: #2563eb;
-
             transform: translateY(-2px);
-
         }
 
         #prev {
-
             left: 2rem;
-
         }
 
         #next {
-
             right: 2rem;
-
         }
 
         /* 頁碼 */
-
         .slide-number {
-
             position: fixed;
-
             bottom: 2.5rem;
-
             left: 50%;
-
             transform: translateX(-50%);
-
             color: #64748b;
-
             font-size: 0.875rem;
-
             z-index: 5;
-
         }
 
         /* 四象限圖樣式 */
-
         .quadrant-grid {
-
             display: grid;
-
             grid-template-columns: 1fr 1fr;
-
             grid-template-rows: 1fr 1fr;
-
             gap: 1.5rem; /* 增加間隙 */
-
             width: 100%;
-
             max-width: 800px;
-
             position: relative;
-
             margin-top: 2rem;
-
             padding: 2.5rem;
-
             border-radius: 1rem;
-
             background-color: #f8fafc;
-
             box-shadow: 0 0 20px rgba(0,0,0,0.05);
-
         }
 
         /* 象限格子 */
-
         .quadrant {
-
             background-color: #ffffff;
-
             border-radius: 0.75rem;
-
             padding: 1.5rem;
-
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-
             transition: all 0.2s ease;
-
         }
 
         .quadrant:hover {
-
             transform: scale(1.03);
-
             box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
-
         }
 
         /* 象限標題 */
-
         .quadrant-title {
-
             font-size: 1.125rem;
-
             font-weight: bold;
-
             margin-bottom: 0.5rem;
-
         }
 
         /* 象限狀態 */
-
         .quadrant-status {
-
             font-size: 1rem;
-
             color: #475569;
-
             margin-bottom: 0.75rem;
-
         }
 
         /* 象限訊號 */
-
         .quadrant-signal {
-
             font-size: 1.5rem; /* 放大圖示和文字 */
-
             font-weight: bold;
-
             display: flex;
-
             align-items: center;
-
             justify-content: center;
-
             gap: 0.5rem;
-
         }
 
         /* 軸標籤 */
-
         .axis-label {
-
             position: absolute;
-
             font-weight: bold;
-
             color: #334155;
-
             background-color: #e2e8f0;
-
             padding: 0.25rem 0.75rem;
-
             border-radius: 9999px;
-
             font-size: 0.875rem;
-
         }
 
         /* Y 軸 */
-
         .y-axis-top { top: 0; left: 50%; transform: translateX(-50%) translateY(-50%); }
-
         .y-axis-bottom { bottom: 0; left: 50%; transform: translateX(-50%) translateY(50%); }
 
         /* X 軸 */
-
         .x-axis-left { left: 0; top: 50%; transform: translateY(-50%) translateX(-50%); }
-
         .x-axis-right { right: 0; top: 50%; transform: translateY(-50%) translateX(50%); }
-
         
-
         /* 手機版調整 */
-
         @media (max-width: 768px) {
-
-            .slide { padding: 1rem; }
+            /* 【關鍵修復 1】允許投影片「內部」垂直捲動 */
+            .slide { 
+                padding: 1rem; 
+                padding-bottom: 6rem; /* 增加底部空間，避免被導覽按鈕遮擋 */
+                justify-content: flex-start; /* 內容從頂部開始，而非置中 */
+                overflow-y: auto; /* 允許投影片內部垂直捲動 */
+            }
+            
+            /* 【關鍵修復 2】投影片內容不要強制撐滿高度 */
+            .slide-content {
+                flex-grow: 0; /* 不要強制撐滿高度 */
+                justify-content: flex-start; /* 內容對齊頂部 */
+                width: 100%; /* 確保內容佔滿寬度 */
+                padding-top: 1rem; /* 頂部留點空間 */
+                padding-bottom: 1rem; /* 底部留點空間 */
+            }
 
             .nav-button { padding: 0.5rem 1rem; bottom: 1rem; }
-
             #prev { left: 1rem; }
-
             #next { right: 1rem; }
-
             .slide-number { bottom: 1.5rem; }
-
             .quadrant-grid { grid-template-columns: 1fr; gap: 1rem; padding: 2rem 1rem; }
-
             .axis-label { position: relative; width: 100%; transform: none !important; left: auto; right: auto; top: auto; bottom: auto; margin-bottom: 0.5rem; }
-
-            .y-axis-top { order: -4; }
-
-            .x-axis-left { order: -3; }
-
-            .quadrant:nth-of-type(1) { order: -2; } /* Q1 */
-
-            .x-axis-right { order: -1; }
-
-            .quadrant:nth-of-type(2) { order: 0; }  /* Q2 */
-
-            .y-axis-bottom { order: 1; }
-
-            .quadrant:nth-of-type(3) { order: 2; } /* Q3 */
-
-            .quadrant:nth-of-type(4) { order: 4; } /* Q4 */
-
             
-
+            /* 調整手機版四象限圖的順序 */
+            .y-axis-top { order: -4; }
+            .x-axis-left { order: -3; }
+            .quadrant:nth-of-type(1) { order: -2; } /* Q1 */
+            .x-axis-right { order: -1; }
+            .quadrant:nth-of-type(2) { order: 0; }  /* Q2 */
+            .y-axis-bottom { order: 1; }
+            .quadrant:nth-of-type(3) { order: 2; } /* Q3 */
+            .quadrant:nth-of-type(4) { order: 4; } /* Q4 */
+            
             /* 隱藏桌機版軸標籤，改用 inline 標籤 */
-
             .desktop-axis { display: none; }
-
             .mobile-axis { display: block; text-align: center; }
-
         }
 
         @media (min-width: 769px) {
-
             .mobile-axis { display: none; }
-
         }
-
     </style>
-
 </head>
-
 <body class="overflow-hidden h-screen relative">
 
-
-
     <!-- 投影片 1: 封面頁 -->
-
     <div id="slide-1" class="slide active bg-blue-50">
-
         <div class="slide-content space-y-8">
-
             <h1 class="text-4xl md:text-6xl font-bold text-blue-800">股票市場的兩種遊戲</h1>
-
             <div class="flex items-center justify-center space-x-8 md:space-x-16">
-
                 <div class="text-center space-y-2">
-
                     <span class="text-7xl md:text-9xl">🏬</span>
-
                     <p class="text-xl md:text-2xl font-bold text-blue-700">百貨公司</p>
-
                 </div>
-
                 <span class="text-4xl md:text-6xl font-bold text-slate-500">VS.</span>
-
                 <div class="text-center space-y-2">
-
                     <span class="text-7xl md:text-9xl">🎫</span>
-
                     <p class="text-xl md:text-2xl font-bold text-red-700">演唱會</p>
-
                 </div>
-
             </div>
-
             <h2 class="text-2xl md:text-4xl font-bold text-slate-700">你在「百貨公司」還是在「演唱會」？</h2>
-
         </div>
-
     </div>
-
-
 
     <!-- 投影片 2: 熊市玩法 -->
-
     <div id="slide-2" class="slide bg-sky-50">
-
         <div class="slide-content space-y-6">
-
             <h1 class="text-4xl md:text-6xl font-bold text-sky-800">🐻 熊市玩法：逛百貨公司</h1>
-
             <h2 class="text-2xl md:text-4xl font-bold text-sky-600">(看「價值」)</h2>
-
             <p class="text-xl md:text-2xl text-slate-700">核心概念：買「標價」合理的東西</p>
-
             
-
             <!-- 視覺比喻 -->
-
             <div class="flex flex-col md:flex-row items-center justify-center gap-8 p-6 bg-white rounded-2xl shadow-lg w-full max-w-2xl">
-
                 <span class="text-8xl">🧥</span>
-
                 <div class="space-y-4 text-left">
-
                     <div class="bg-gray-200 p-4 rounded-lg">
-
                         <span class="text-lg font-bold text-gray-700">標價 (價值)：</span>
-
                         <span class="text-2xl font-bold text-gray-800">$2000 元</span>
-
                     </div>
-
                     <div class="bg-green-100 p-4 rounded-lg border-2 border-green-400">
-
                         <span class="text-lg font-bold text-green-700">今日售價 (股價)：</span>
-
                         <span class="text-2xl font-bold text-green-800">$1000 元</span>
-
                     </div>
-
                 </div>
-
             </div>
-
             
-
             <p class="text-lg md:text-xl text-slate-600 font-bold bg-yellow-100 p-4 rounded-lg">
-
                 你知道這件外套值 $2000，現在只賣 $1000，太便宜了！ -> 買進 😊
-
             </p>
-
         </div>
-
     </div>
-
-
 
     <!-- 投影片 3: 價值戰略圖 -->
-
     <div id="slide-3" class="slide bg-sky-50">
-
         <div class="slide-content w-full">
-
             <h1 class="text-3xl md:text-5xl font-bold text-sky-800 mb-4">百貨公司戰略圖 (價值 vs 股價)</h1>
-
             
-
             <!-- 手機版軸標籤 -->
-
             <div class="mobile-axis space-y-2">
-
                 <div class="axis-label w-full">Y 軸 (股價漲跌)</div>
-
                 <div class="axis-label w-full">X 軸 (便宜/昂貴)</div>
-
             </div>
-
             
-
             <div class="quadrant-grid">
-
                 <!-- 軸標籤 (桌機) -->
-
                 <div class="axis-label y-axis-top desktop-axis">股價漲 📈</div>
-
                 <div class="axis-label y-axis-bottom desktop-axis">股價跌 📉</div>
-
                 <div class="axis-label x-axis-left desktop-axis">便宜 (售價 < 價值)</div>
-
                 <div class="axis-label x-axis-right desktop-axis">昂貴 (售價 > 價值)</div>
-
             
-
                 <!-- Q1: 股價漲 + 便宜 (左上) -->
-
                 <div class="quadrant border-t-4 border-green-500">
-
                     <div class="quadrant-title text-green-700">特價品漲回原價</div>
-
                     <div class="quadrant-status">(黃金被當塑膠賣，現在大家發現了)</div>
-
                     <div class="quadrant-signal text-green-700">
-
                         <span>👍</span>
-
                         <span>真相不要怕</span>
-
                     </div>
-
                 </div>
-
                 
-
                 <!-- Q2: 股價漲 + 昂貴 (右上) -->
-
                 <div class="quadrant border-t-4 border-red-500">
-
                     <div class="quadrant-title text-red-700">泡沫！(塑膠賣黃金價)</div>
-
                     <div class="quadrant-status">(大漲，但已經太貴了，快跑)</div>
-
                     <div class="quadrant-signal text-red-700">
-
                         <span>🏃‍♂️</span>
-
                         <span>假象要閃</span>
-
                     </div>
-
                 </div>
-
                 
-
                 <!-- Q3: 股價跌 + 便宜 (左下) -->
-
                 <div class="quadrant border-t-4 border-green-500">
-
                     <div class="quadrant-title text-green-700">跳樓大拍賣！(黃金打折賣)</div>
-
                     <div class="quadrant-status">(大跌，但東西很超值，快買)</div>
-
                     <div class="quadrant-signal text-green-700">
-
                         <span>😊</span>
-
                         <span>假象不要怕</span>
-
                     </div>
-
                 </div>
-
                 
-
                 <!-- Q4: 股價跌 + 昂貴 (右下) -->
-
                 <div class="quadrant border-t-4 border-red-500">
-
                     <div class="quadrant-title text-red-700">泡沫正在破</div>
-
                     <div class="quadrant-status">(漲太貴，跌回原價)</div>
-
                     <div class="quadrant-signal text-red-700">
-
                         <span>😱</span>
-
                         <span>真相才要怕</span>
-
                     </div>
-
                 </div>
-
             </div>
-
         </div>
-
     </div>
-
-
 
     <!-- 投影片 4: 牛市玩法 -->
-
     <div id="slide-4" class="slide bg-red-50">
-
         <div class="slide-content space-y-6">
-
             <h1 class="text-4xl md:text-6xl font-bold text-red-800">🐂 牛市玩法：搶演唱會門票</h1>
-
             <h2 class="text-2xl md:text-4xl font-bold text-red-600">(看「資金」)</h2>
-
             <p class="text-xl md:text-2xl text-slate-700">核心概念：買「很多人搶」的東西</p>
 
-
-
             <!-- 視覺比喻 -->
-
             <div class="flex flex-col md:flex-row items-center justify-center gap-8 p-6 bg-white rounded-2xl shadow-lg w-full max-w-2xl">
-
                 <div class="relative">
-
                     <span class="text-8xl">🎫</span>
-
                     <!-- 人潮/資金 -->
-
                     <span class="text-5xl absolute -left-10 -bottom-2 animate-bounce">💰</span>
-
                     <span class="text-4xl absolute -left-5 top-0 animate-bounce" style="animation-delay: 0.2s;">🏃‍♀️</span>
-
                     <span class="text-5xl absolute -right-10 -bottom-2 animate-bounce" style="animation-delay: 0.4s;">🏃‍♂️</span>
-
                     <span class="text-4xl absolute -right-5 top-0 animate-bounce" style="animation-delay: 0.6s;">💰</span>
-
                 </div>
-
                 <div class="space-y-4 text-left">
-
                     <div class="bg-gray-200 p-4 rounded-lg">
-
                         <span class="text-lg font-bold text-gray-700">原價 (價值)：</span>
-
                         <span class="text-2xl font-bold text-gray-800 line-through">$2000 元</span>
-
                     </div>
-
                     <div class="bg-orange-100 p-4 rounded-lg border-2 border-orange-400">
-
                         <span class="text-lg font-bold text-orange-700">黃牛票 (股價)：</span>
-
                         <span class="text-2xl font-bold text-orange-800">$10000 元</span>
-
                     </div>
-
                 </div>
-
             </div>
-
             
-
             <p class="text-lg md:text-xl text-slate-600 font-bold bg-yellow-100 p-4 rounded-lg">
-
                 票價不重要，重要的是「排隊的人(資金)是變多還變少？」 -> 跟著人潮買 😎
-
             </p>
-
         </div>
-
     </div>
-
-
 
     <!-- 投影片 5: 資金戰略圖 -->
-
     <div id="slide-5" class="slide bg-red-50">
-
         <div class="slide-content w-full">
-
             <h1 class="text-3xl md:text-5xl font-bold text-red-800 mb-4">演唱會戰略圖 (資金 vs 股價)</h1>
-
             
-
             <!-- 手機版軸標籤 -->
-
             <div class="mobile-axis space-y-2">
-
                 <div class="axis-label w-full">Y 軸 (股價漲跌)</div>
-
                 <div class="axis-label w-full">X 軸 (資金增減)</div>
-
             </div>
-
-
 
             <div class="quadrant-grid">
-
                 <!-- 軸標籤 (桌機) -->
-
                 <div class="axis-label y-axis-top desktop-axis">股價漲 📈</div>
-
                 <div class="axis-label y-axis-bottom desktop-axis">股價跌 📉</div>
-
                 <div class="axis-label x-axis-left desktop-axis">資金增 💰</div>
-
                 <div class="axis-label x-axis-right desktop-axis">資金減 💸</div>
 
-
-
                 <!-- Q1: 股價漲 + 資金增 (左上) -->
-
                 <div class="quadrant border-t-4 border-green-500">
-
                     <div class="quadrant-title text-green-700">火箭有燃料</div>
-
                     <div class="quadrant-status">(人潮湧入，票價狂飆)</div>
-
                     <div class="quadrant-signal text-green-700">
-
                         <span>👍</span>
-
                         <span>真相不要怕</span>
-
                     </div>
-
                 </div>
-
                 
-
                 <!-- Q2: 股價漲 + 資金減 (右上) -->
-
                 <div class="quadrant border-t-4 border-red-500">
-
                     <div class="quadrant-title text-red-700">火箭沒燃料</div>
-
                     <div class="quadrant-status">(人潮在偷跑，票價假漲)</div>
-
                     <div class="quadrant-signal text-red-700">
-
                         <span>🏃‍♂️</span>
-
                         <span>假象要閃</span>
-
                     </div>
-
                 </div>
-
                 
-
                 <!-- Q3: 股價跌 + 資金增 (左下) -->
-
                 <div class="quadrant border-t-4 border-green-500">
-
                     <div class="quadrant-title text-green-700">假裝跌倒</div>
-
                     <div class="quadrant-status">(有人在偷撿便宜票)</div>
-
                     <div class="quadrant-signal text-green-700">
-
                         <span>😊</span>
-
                         <span>假象不要怕</span>
-
                     </div>
-
                 </div>
-
                 
-
                 <!-- Q4: 股價跌 + 資金減 (右下) -->
-
                 <div class="quadrant border-t-4 border-red-500">
-
                     <div class="quadrant-title text-red-700">真的雪崩了</div>
-
                     <div class="quadrant-status">(人潮散去，票價崩盤)</div>
-
                     <div class="quadrant-signal text-red-700">
-
                         <span>😱</span>
-
                         <span>真相才要怕</span>
-
                     </div>
-
                 </div>
-
             </div>
-
         </div>
-
     </div>
-
-
 
     <!-- 投影片 6: 總結頁 -->
-
     <div id="slide-6" class="slide bg-blue-50">
-
         <div class="slide-content space-y-8">
-
             <h1 class="text-4xl md:text-6xl font-bold text-blue-800">總結：你玩的是哪種遊戲？</h1>
-
             
-
             <div class="flex flex-col md:flex-row items-stretch justify-center gap-8 w-full max-w-4xl">
-
                 <!-- 熊市 -->
-
                 <div class="flex-1 bg-sky-100 p-6 rounded-2xl shadow-lg border-4 border-sky-300">
-
                     <h2 class="text-3xl font-bold text-sky-800 mb-4">🐻 熊市 (百貨公司)</h2>
-
                     <div class="text-7xl mb-4">🏬 + 🏷️</div>
-
                     <p class="text-2xl font-bold text-sky-700 mb-2">策略：看「價值」</p>
-
                     <p class="text-lg text-slate-700">玩法：買便宜的，賣昂貴的。</p>
-
                 </div>
-
                 
-
                 <!-- 牛市 -->
-
                 <div class="flex-1 bg-red-100 p-6 rounded-2xl shadow-lg border-4 border-red-300">
-
                     <h2 class="text-3xl font-bold text-red-800 mb-4">🐂 牛市 (演唱會)</h2>
-
                     <div class="text-7xl mb-4">🎫 + 🏃‍♂️🏃‍♀️</div>
-
                     <p class="text-2xl font-bold text-red-700 mb-2">策略：看「資金」</p>
-
                     <p class="text-lg text-slate-700">玩法：跟著人潮買，在人潮散去前賣掉。</p>
-
                 </div>
-
             </div>
 
-
-
             <p class="text-xl md:text-2xl font-bold text-slate-800 bg-yellow-200 p-6 rounded-lg shadow-md">
-
                 搞清楚現在是哪種遊戲，再決定你的策略！
-
             </p>
-
         </div>
-
     </div>
 
-
-
     <!-- 導覽 -->
-
     <button id="prev" class="nav-button">上一頁</button>
-
     <button id="next" class="nav-button">下一頁</button>
-
     <div id="slide-number" class="slide-number">1 / 6</div>
 
-
-
     <script>
-
         let currentSlide = 1;
-
         const totalSlides = 6;
-
         
-
         const prevButton = document.getElementById('prev');
-
         const nextButton = document.getElementById('next');
-
         const slideNumber = document.getElementById('slide-number');
 
-
-
         function showSlide(slideIndex) {
-
             // 隱藏目前投影片
-
             const current = document.getElementById(`slide-${currentSlide}`);
-
             if (current) {
-
                 current.classList.remove('active');
-
             }
-
             
-
             // 顯示新投影片
-
             const next = document.getElementById(`slide-${slideIndex}`);
-
             if (next) {
-
                 next.classList.add('active');
-
+                // (手機版) 如果投影片內部有捲動，切換時自動捲回頂部
+                if (window.innerWidth <= 768) {
+                    next.scrollTop = 0;
+                }
             }
-
             
-
             currentSlide = slideIndex;
-
             
-
             // 更新頁碼
-
             slideNumber.textContent = `${currentSlide} / ${totalSlides}`;
-
             
-
             // 更新按鈕狀態
-
             prevButton.style.display = (currentSlide === 1) ? 'none' : 'block';
-
             nextButton.style.display = (currentSlide === totalSlides) ? 'none' : 'block';
-
         }
 
-
-
         prevButton.addEventListener('click', () => {
-
             if (currentSlide > 1) {
-
                 showSlide(currentSlide - 1);
-
             }
-
         });
-
-
 
         nextButton.addEventListener('click', () => {
-
             if (currentSlide < totalSlides) {
-
                 showSlide(currentSlide + 1);
-
             }
-
         });
 
-
-
         // 初始顯示第一張
-
         showSlide(1);
 
+        // --- 開始：新增滑動換頁功能 ---
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
+        const swipeThreshold = 50; // 最小滑動距離 (px)
+
+        document.body.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }, { passive: true }); // 使用 passive 提升效能
+
+        document.body.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            touchEndY = e.changedTouches[0].screenY;
+            handleSwipe();
+        }, { passive: true });
+
+        function handleSwipe() {
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+
+            // 僅在「水平滑動」距離大於「垂直滑動」距離時觸發
+            // 這樣才不會干擾投影片內部的垂直捲動
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > swipeThreshold) {
+                if (deltaX < 0) {
+                    // 向左滑 (下一頁)
+                    if (currentSlide < totalSlides) {
+                        showSlide(currentSlide + 1);
+                    }
+                } else {
+                    // 向右滑 (上一頁)
+                    if (currentSlide > 1) {
+                        showSlide(currentSlide - 1);
+                    }
+                }
+            }
+        }
+        // --- 結束：新增滑動換頁功能 ---
     </script>
-
 </body>
-
 </html>
